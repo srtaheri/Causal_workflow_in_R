@@ -1,0 +1,627 @@
+---
+title: "Covid Network"
+author: "Sara Taheri"
+date: "6/29/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(dplyr)
+library("combinat") 
+```
+
+```{r}
+ndp = 1000 #number of data points in the generated data set
+startSeed = 1
+K = 1000 #number of data sets 
+ndpu = c(1000) #number of data points from the generated data set used to train the model and learn the parameters
+samples <- sample(1:3000,100)
+```
+
+
+## Generate observational and interventional data
+
+```{r}
+generate_data <- function(targer_of_intervention, value_of_intervention, EGFR_type = "None", seed = seed) {
+  
+  
+  
+  set.seed(seed)
+  Gefi <- rnorm(ndp, 45, 10)
+  Toci <- rnorm(ndp, 45, 10)
+  U_SARS_ANG <- rnorm(ndp, 44, 10)
+  U_PRR_NFKB <- rnorm(ndp, 40, 10)
+  U_EGF_EGFR <- rnorm(ndp, 35, 10)
+  U_TNF_EGFR <- rnorm(ndp, 40, 10)
+  U_IL6STAT_EGFR <- rnorm(ndp, 44, 10)
+  U_ADAM17_SIL6Ra <- rnorm(ndp, 40, 10)
+  
+  set.seed(seed)
+  beta0_SARS_COV2 = -1.8
+  beta_U_SARS_AngToSARS_COV2 = 0.05 #positive
+  SARS_COV2 <- rnorm(ndp, 
+                     100 / (1 + exp(-beta0_SARS_COV2 -U_SARS_ANG * beta_U_SARS_AngToSARS_COV2)),
+                     1)
+  
+  set.seed(seed)
+  beta0_ACE2 = 1.5
+  beta_SARS_COV2ToACE2 = -0.04 #negative
+  ACE2 <- rnorm(ndp,
+                100/ (1 + exp(-beta0_ACE2 - SARS_COV2 * beta_SARS_COV2ToACE2)),
+                1)
+  
+  set.seed(seed)
+  beta0_Ang = 1.1
+  beta_ACE2ToAng = -0.06 #negative
+  beta_U_SARS_AngToAng = 0.05 #positive
+  Ang = rnorm(ndp, 
+              100/ (1 + exp(-beta0_Ang - ACE2 * beta_ACE2ToAng - U_SARS_ANG *beta_U_SARS_AngToAng)),
+              1)
+  
+  set.seed(seed)
+  beta0_AGTR1 = -1.5
+  beta_AngToAGTR1 = 0.08
+  AGTR1 = rnorm(ndp,
+                100 / (1 + exp(-beta0_AGTR1 - Ang * beta_AngToAGTR1)),
+                1)
+  
+  set.seed(seed)
+  beta0_ADAM17 = -1
+  beta_AGTR1ToADAM17 = 0.04
+  beta_U_ADAM17_Sil6rToADAM17 = 0.04
+  ADAM17 = rnorm(ndp,
+                 100 / (1 + exp(-beta0_ADAM17 - AGTR1 * beta_AGTR1ToADAM17 - U_ADAM17_SIL6Ra * beta_U_ADAM17_Sil6rToADAM17)),
+                 1)
+  
+  set.seed(seed)
+  beta0_Sil6r = -1.9
+  beta_ADAM17ToSil6r = 0.03
+  beta_UToSil6r = 0.05
+  beta_TociToSil6r = -0.04 #negative
+  Sil6r = rnorm(ndp,
+                100 / (1 + exp(-beta0_Sil6r - ADAM17 * beta_ADAM17ToSil6r - U_ADAM17_SIL6Ra * beta_UToSil6r - Toci * beta_TociToSil6r)),
+                1)
+  
+  set.seed(seed)
+  beta0_EGF = -1.6
+  beta_ADAM17ToEGF = 0.03
+  beta_UToEGF = 0.05
+  EGF = rnorm(ndp,
+              100 / (1 + exp(-beta0_EGF - ADAM17 * beta_ADAM17ToEGF - U_EGF_EGFR * beta_UToEGF)),
+              1)
+  
+  set.seed(seed)
+  beta0_TNF = -1.8
+  beta_ADAM17ToTNF = 0.05
+  beta_UToTNF = 0.06  
+  TNF = rnorm(ndp,
+              100 / (1 + exp(-beta0_TNF - ADAM17 * beta_ADAM17ToTNF - U_TNF_EGFR * beta_UToTNF)),
+              1)
+  
+  set.seed(seed)
+  beta0_EGFR = -1.9
+  beta_EGFToEGFR = 0.03
+  beta_U1ToEGFR = 0.05
+  beta_U2ToEGFR = 0.02
+  beta_U3ToEGFR = 0.04
+  beta_GefiToEGFR = -0.08 #negative
+  if(targer_of_intervention == "EGFR") {
+    EGFR = rep(value_of_intervention,ndp)
+  }
+  if(targer_of_intervention == "None") {
+    #d = -beta0_EGFR - EGF * beta_EGFToEGFR - U_IL6STAT_EGFR * beta_U1ToEGFR - U_TNF_EGFR * beta_U2ToEGFR  - U_EGF_EGFR * beta_U3ToEGFR - Gefi * beta_GefiToEGFR
+    #p = (d - min(d))/(max(d) - min(d))
+    p = 1/(1 + exp(-beta0_EGFR - EGF * beta_EGFToEGFR - U_IL6STAT_EGFR * beta_U1ToEGFR - U_TNF_EGFR * beta_U2ToEGFR  - U_EGF_EGFR * beta_U3ToEGFR - Gefi * beta_GefiToEGFR))
+    EGFR_discrete = rbinom(ndp, 1, prob=p)
+    
+    EGFR_continuous = rnorm(ndp,
+                            100 / (1 + exp(-beta0_EGFR - EGF * beta_EGFToEGFR - U_IL6STAT_EGFR * beta_U1ToEGFR - U_TNF_EGFR * beta_U2ToEGFR  - U_EGF_EGFR * beta_U3ToEGFR - Gefi * beta_GefiToEGFR)), 1)
+    if(EGFR_type == "discrete") {
+      EGFR = EGFR_discrete
+    }else {
+      EGFR = EGFR_continuous
+    }
+  }
+  
+  set.seed(seed)
+  beta0_PRR = -1.4
+  beta_SARS_COV2ToPRR = 0.05
+  beta_U_PRR_NFKBToPRR = 0.02
+  PRR = rnorm(ndp,
+              100 / (1 + exp(-beta0_PRR - SARS_COV2 * beta_SARS_COV2ToPRR - U_PRR_NFKB * beta_U_PRR_NFKBToPRR)), 1)
+  
+  set.seed(seed)
+  beta0_NFKB = -1.8
+  beta_PRRToNFKB = 0.01
+  beta_U_PRR_NFKBToNFKB = -0.02
+  beta_EGFRToNFKB = 0.06 #### changed 0.02 to 0.06
+  beta_TNFToNFKB = 0.01 ### changed 0.03 to 0.01
+  NFKB = rnorm(ndp,
+               100 / (1 + exp(-beta0_NFKB - PRR * beta_PRRToNFKB - U_PRR_NFKB * beta_U_PRR_NFKBToNFKB - EGFR * beta_EGFRToNFKB  - TNF * beta_TNFToNFKB)),
+               1)
+  
+  set.seed(seed)
+  beta0_IL6STAT3 = -1.6
+  beta_UToIL6STAT3 = -0.05
+  beta_Sil6rToIL6STAT3 = 0.04
+  IL6STAT3 = rnorm(ndp,
+                   100 / (1 + exp(-beta0_IL6STAT3 - U_IL6STAT_EGFR * beta_UToIL6STAT3 - Sil6r * beta_Sil6rToIL6STAT3)),1)
+  
+  set.seed(seed)
+  beta0_IL6AMP = -1.98
+  beta_NFKBToIL6AMP = 0.02
+  beta_IL6STAT3ToIL6AMP = 0.03
+  IL6AMP = rnorm(ndp,
+                 100 / (1 + exp(-beta0_IL6AMP - NFKB * beta_NFKBToIL6AMP - IL6STAT3 * beta_IL6STAT3ToIL6AMP)),1)
+  
+  set.seed(seed)
+  beta0_cytok = -1.9
+  beta_IL6AMPTocytok = 0.06
+  cytok = rnorm(ndp,100 / (1 + exp(-beta0_cytok - IL6AMP * beta_IL6AMPTocytok)),1)
+  #p_cytok = 1 / (1 + exp(-beta0_cytok - IL6AMP * beta_IL6AMPTocytok))
+  #cytok = rbinom(n = ndp, size = 1, prob = p_cytok)
+  
+  data <- data.frame("U_SARS_ANG" = U_SARS_ANG
+                     ,"SARS_COV2" = SARS_COV2
+                     ,"ACE2" = ACE2
+                     ,"Ang" = Ang
+                     ,"AGTR1" = AGTR1
+                     ,"U_ADAM17_SIL6Ra" = U_ADAM17_SIL6Ra
+                     ,"ADAM17" = ADAM17
+                     ,"Toci" = Toci
+                     ,"Sil6r" = Sil6r
+                     ,"U_EGF_EGFR" = U_EGF_EGFR
+                     ,"EGF" = EGF
+                     ,"U_TNF_EGFR" = U_TNF_EGFR
+                     ,"TNF" = TNF
+                     ,"U_IL6STAT_EGFR" = U_IL6STAT_EGFR
+                     ,"Gefi" = Gefi
+                     ,"EGFR" = EGFR
+                     ,"U_PRR_NFKB" = U_PRR_NFKB
+                     ,"PRR" = PRR
+                     ,"NFKB" = NFKB
+                     ,"IL6STAT3" = IL6STAT3
+                     ,"IL6AMP" = IL6AMP
+                     ,"cytok" = cytok)
+  
+  
+  return(data)
+}
+```
+
+```{r}
+obs_data_list_EGFR_discrete <- list()
+obs_data_list_EGFR_continous <- list()
+intv_data_list_1 <- list()
+intv_data_list_0 <- list()
+data_count = 1
+for (seed in startSeed:(startSeed+K-1)) {
+  obs_data_list_EGFR_discrete[[data_count]] <- generate_data(targer_of_intervention = "None", value_of_intervention = "None", EGFR_type = "discrete", seed = seed)
+  #write.csv(obs_data_list_EGFR_discrete[[data_count]],paste("Covid_obs_",seed,".csv",sep=""))
+  obs_data_list_EGFR_continous[[data_count]] <- generate_data(targer_of_intervention = "None", value_of_intervention = "None", seed = seed)
+  intv_data_list_1[[data_count]] <- generate_data(targer_of_intervention = "EGFR", value_of_intervention = 20,seed = seed)
+  intv_data_list_0[[data_count]] <- generate_data(targer_of_intervention = "EGFR", value_of_intervention = 21,seed = seed)
+  data_count = data_count + 1
+}
+```
+
+```{r}
+#saveRDS(obs_data_list_EGFR_discrete, "/Users/sarataheri/GitHub/Simplified_LVM/Covid_case_study/obs_data_list.RData")
+```
+
+
+ATE:
+
+```{r}
+seed = 5
+mean(generate_data(targer_of_intervention = "EGFR", value_of_intervention = 1,seed = seed)$cytok) - mean(generate_data(targer_of_intervention = "EGFR", value_of_intervention = 0,seed = seed)$cytok )
+```
+
+
+#Linear regression approach
+## Estimate the causal effect with linear regression
+
+```{r}
+covid_regression <- function(effect, cause, variables, seed) {
+  
+  data <- generate_data(targer_of_intervention = "None", value_of_intervention = "None", EGFR_type = "discrete", seed = seed)
+  data <- data[1:ndpu,]
+  f <- as.formula(paste(effect,
+                        paste(variables, collapse = " + "),
+                        sep = " ~ "))
+  bCytokGivenEGFR <- coef(lm(f,data)) [paste(cause)]
+  
+  return(bCytokGivenEGFR)
+}
+```
+
+
+```{r}
+#the mediators are not considered
+
+olive <- c("EGFR", "ADAM17", "IL6STAT3", "TNF", "Sil6r") #do not put effect
+my_vec <- c("SARS_COV2", "ACE2", "Ang", "AGTR1", "Toci", "EGF", "Gefi", "PRR")
+my_combi <- unlist(lapply(1:length(my_vec),    # Get all combinations
+                           combinat::combn, 
+                           x = my_vec,
+                           simplify = FALSE), 
+                    recursive = FALSE)
+```
+
+```{r}
+rep <- c()
+result <- list()
+for (j in 1:length(my_combi)) {
+  print(j)
+  vars = c(olive, my_combi[[j]])
+  for (i in 1:1000) {
+    rep <- c(rep, covid_regression(effect = "cytok",cause = "EGFR",variables = vars ,seed=i))
+  }
+  rep <- unname(rep)
+  result[[j]] <- rep
+  rep <- c()
+}
+#Only for olive
+rep_olive <- c()
+for (i in 1:1000) {
+  rep_olive <- c(rep_olive, covid_regression(effect = "cytok",cause = "EGFR",variables = olive ,seed=i))
+}
+rep_olive <- unname(rep_olive)
+result[[length(my_combi)+1]] <- rep_olive
+
+#saveRDS(rep_olive, "data/Covid_hmc_fit/cytokGivenOliveNoMediator_ndpu1000.RData")
+#saveRDS(result, "cytokGivenOlivePlusOtherVarsNoMediator.RData")
+```
+
+```{r}
+resultOlive <- readRDS("cytokGivenOlivePlusOtherVarsNoMediator.RData")
+var_result <- list()
+IQR_result <- list()
+var_comp <- 1000
+
+for (j in 1:(length(my_combi)+1)) {
+  var_value <- var(resultOlive[[j]])
+  if(var_value < var_comp) {
+    L = j
+    var_comp <- var_value
+  }
+  var_result[[j]] <- var_value
+  IQR_result[[j]] <- summary(resultOlive[[j]])
+}
+# L=249
+# The optimal network by not considering the mediators is: "cytok" "EGFR" "SARS_COV2" "ACE2"      "Ang"       "AGTR1"     "Toci"      "Gefi"      "PRR"  
+```
+
+```{r}
+#Full
+rep_full <- c()
+for (i in 1:K) {
+  rep_full <- c(rep_full, 
+                covid_regression(effect = "cytok",cause = "IL6AMP",variables = c("IL6AMP", "SARS_COV2", "ACE2", "Ang", "AGTR1","Sil6r", "TNF", "NFKB","EGF", "Gefi") ,seed=i) *
+                covid_regression(effect = "IL6AMP",cause = "NFKB",variables = c("ACE2", "ADAM17", "TNF", "NFKB","EGFR","IL6STAT3" ,"Toci", "Gefi", "PRR") ,seed=i) *
+                covid_regression(effect = "NFKB",cause = "EGFR",variables = c("SARS_COV2", "ACE2","Ang", "AGTR1", "ADAM17", "TNF","EGFR", "Gefi", "PRR") ,seed=i)
+                )
+}
+rep_full <- unname(rep_full)
+
+#saveRDS(rep_full, "data/Covid_hmc_fit/full_lm_ndpu1000.RData")
+```
+
+```{r}
+#Olive
+rep_olive <- c()
+for (i in 1:K) {
+  rep_olive <- c(rep_olive, covid_regression(effect = "cytok",cause = "EGFR",variables = olive ,seed=i))
+}
+rep_olive <- unname(rep_olive)
+
+#saveRDS(rep_olive, "data/Covid_hmc_fit/olive_lm_ndpu1000.RData")
+```
+
+```{r}
+#Olive + EGF + Gefi
+rep_olive_yellow <- c()
+for (i in 1:K) {
+  rep_olive_yellow <- c(rep_olive_yellow, covid_regression(effect = "cytok",cause = "EGFR",variables = c(olive, "EGF", "Gefi") ,seed=i))
+}
+rep_olive_yellow <- unname(rep_olive_yellow)
+
+#saveRDS(rep_olive_yellow, "data/Covid_hmc_fit/olive_EGF_Gefi_lm_ndpu1000.RData")
+```
+
+
+```{r}
+#Olive + green  + ACE2 + Gefi
+rep_olive_green <- c()
+for (i in 1:K) {
+  rep_olive_green <- c(rep_olive_green, 
+                       covid_regression(effect = "cytok",cause = "IL6AMP",variables = c("Sil6r","IL6AMP","TNF","NFKB","ACE2","Gefi") ,seed=i) *
+                         covid_regression(effect = "IL6AMP",cause = "NFKB",variables = c("ADAM17","TNF","EGFR","IL6STAT3","NFKB","PRR","ACE2","Gefi") ,seed=i) *
+                         covid_regression(effect = "NFKB",cause = "EGFR",variables = c("ADAM17", "TNF", "PRR","EGFR","ACE2","Gefi") ,seed=i)
+                       )
+}
+rep_olive_green <- unname(rep_olive_green)
+
+
+#saveRDS(rep_olive_green, "data/Covid_hmc_fit/olive_green_Gefi_ACE2_lm_ndpu1000.RData")
+```
+
+
+
+
+
+```{r}
+#test
+effect = "NFKB"
+cause = "EGFR"
+variables = c("SARS_COV2", "ACE2","Ang", "AGTR1", "ADAM17", "TNF","EGFR", "Gefi", "PRR")
+data <- generate_data(targer_of_intervention = "None", value_of_intervention = "None", EGFR_type = "discrete", seed = 1)
+data <- data[1:ndpu,]
+f <- as.formula(paste(effect,
+                      paste(variables, collapse = " + "),
+                      sep = " ~ "))
+lm(f,data)
+```
+
+
+
+
+
+```{r}
+my_vec1 <- c("SARS_COV2", "ACE2", "Ang", "AGTR1", "ADAM17","Sil6r", "TNF", "NFKB","EGFR","IL6STAT3" ,"Toci", "EGF", "Gefi", "PRR")
+my_combi1 <- unlist(lapply(1:length(my_vec1),    # Get all combinations
+                           combinat::combn, 
+                           x = my_vec1,
+                           simplify = FALSE), 
+                    recursive = FALSE)
+
+my_vec2 <- c("SARS_COV2", "ACE2", "Ang", "AGTR1", "ADAM17","Sil6r", "TNF","EGFR" ,"Toci", "EGF", "Gefi", "PRR")
+my_combi2 <- unlist(lapply(1:length(my_vec2),    # Get all combinations
+                           combinat::combn, 
+                           x = my_vec2,
+                           simplify = FALSE), 
+                    recursive = FALSE)
+
+my_vec3 <- c("SARS_COV2", "ACE2", "Ang", "AGTR1","Sil6r","IL6STAT3" ,"Toci", "EGF", "Gefi", "PRR")
+my_combi3 <- unlist(lapply(1:length(my_vec3),    # Get all combinations
+                           combinat::combn, 
+                           x = my_vec3,
+                           simplify = FALSE), 
+                    recursive = FALSE)
+```
+
+
+```{r}
+#Including mediators
+
+rep1 <- c()
+result1 <- list()
+
+for (j in 1:length(my_combi1)) {
+  print(j)
+  for (i in 1:1000) {
+    rep1 <- c(rep1, covid_regression(effect = "cytok",
+                                     cause = "IL6AMP",
+                                     variables = c("IL6AMP",my_combi1[[j]]) ,seed=i))
+  }
+  rep1 <- unname(rep1)
+  result1[[j]] <- rep1
+  rep1 <- c()
+}
+
+saveRDS(result1, "cytokGivenIL6AMPPlusOtherVarsWithMediator.RData")
+```
+
+```{r}
+# Including mediators
+
+rep2 <- c()
+result2 <- list()
+for (j in 1:length(my_combi2)) {
+  print(j)
+  vars2 = c(olive, my_combi2[[j]])
+  for (i in 1:1000) {
+    rep2 <- c(rep2, covid_regression(effect = "IL6AMP",
+                                     cause = "NFKB",
+                                     variables = c("NFKB", "IL6STAT3",my_combi2[[j]]) ,seed=i))
+  }
+  rep2 <- unname(rep2)
+  result2[[j]] <- rep2
+  rep2 <- c()
+}
+saveRDS(result2, "IL6AMPGivenNFKBPlusOtherVarsWithMediator.RData")
+```
+
+
+```{r}
+# Includiing mediators
+
+rep3 <- c()
+result3 <- list()
+for (j in 1:length(my_combi3)) {
+  print(j)
+  vars3 = c(olive, my_combi3[[j]])
+  for (i in 1:100) {
+    rep3 <- c(rep3, covid_regression(effect = "NFKB",
+                                     cause = "EGFR",
+                                     variables = c("EGFR", "ADAM17", "TNF",my_combi3[[j]]) ,seed=i))
+  }
+  rep3 <- unname(rep3)
+  result3[[j]] <- rep3
+  rep3 <- c()
+}
+saveRDS(result3, "NFKBGivenEGFRPlusOtherVarsWithMediator.RData")
+```
+
+```{r}
+result1 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/cytokGivenIL6AMPPlusOtherVarsWithMediator.RData")
+result2 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/IL6AMPGivenNFKBPlusOtherVarsWithMediator.RData")
+result3 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/NFKBGivenEGFRPlusOtherVarsWithMediator.RData")
+#var_compare <- 1000
+
+#changed length(my_combi1) to 11000
+for (i in 1:length(my_combi1)) {
+  print(i)
+  for (j in 1:length(my_combi2)) {
+    for (k in 1:length(my_combi3)) {
+      var_with_med <- var(result1[[i]] * result2[[j]] * result3[[k]])
+      if(var_with_med < var_compare) {
+        var_compare <- var_with_med
+        result4 <- result1[[i]] * result2[[j]] * result3[[k]]
+        I <- i
+        J <- j
+        K <- k
+      }
+    }
+  }
+}
+print(I)
+print(J)
+print(K)
+
+# Results for ndpu = 1000
+# For only olive nodes var is 0.03384597
+# I, J, K till 2214 were 1987, 3171, 652. I saved the results into result 5 for now, var is    0.00102948
+# I, J , K till 6312 were 4891, 3171, 652. I saved the results into result 6 for now, var is   0.001029394
+# I, J, K till 10653 were 9996, 3171, 652, I saved the results into result 7 for now, var is   0.001029316
+#I, J , K till 11000 were 9996, 3171, 652. The results are already saved into result 7, var is 0.001029316
+
+# Results for ndpu = 40
+# For only olive nodes var is 1.034143
+# I, J, K till 1600 were 1497, 2024, 863,  var is   0.03725533
+# I, J, K till 3200 were 2619, 2024, 863,  var is   0.03712331
+# I, J, K till 4800 were 4486, 2024, 863,  var is   0.03705593
+# I, J, K till 6400 were 6209, 2024, 863,  var is   0.03702013
+# I, J, K till 8191 were 7328, 2024, 863,  var is   0.03699283
+```
+
+
+```{r}
+K=100
+
+# rep_full_lm_N30 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/full_lm_ndpu30.RData")[1:K]
+# rep_olive_lm_N30 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_lm_ndpu30.RData")[1:K]
+# rep_olive_EGF_Gefi_lm_N30 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_EGF_Gefi_lm_ndpu30.RData")[1:K]
+# rep_olive_green_Gefi_ACE2_lm_N30 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_green_Gefi_ACE2_lm_ndpu30.RData")[1:K]
+
+
+rep_full_lm_N1000 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/full_lm_ndpu1000.RData")[1:K]
+rep_olive_lm_N1000 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_lm_ndpu1000.RData")[1:K]
+rep_olive_EGF_Gefi_lm_N1000 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_EGF_Gefi_lm_ndpu1000.RData")[1:K]
+rep_olive_green_Gefi_ACE2_lm_N1000 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_green_Gefi_ACE2_lm_ndpu1000.RData")[1:K]
+
+# rep_full_aipw_N30 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/full_aipw_ndpu30.csv")))[[1]][1:K]
+# rep_olive_aipw_N30 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_aipw_ndpu30.csv")))[[1]][1:K]
+# rep_olive_EGF_Gefi_aipw_N30 <- rep_full_aipw_N30
+# rep_olive_green_Gefi_ACE2_aipw_N30 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_green_Gefi_ACE2_aipw_ndpu30.csv")))[[1]][1:K]
+
+
+# rep_full_ipw_N30 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/full_ipw_ndpu30.csv")))[[1]][1:K]
+# rep_olive_ipw_N30 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_ipw_ndpu30.csv")))[[1]][1:K]
+# rep_olive_EGF_Gefi_ipw_N30 <- rep_full_ipw_N30
+# rep_olive_green_Gefi_ACE2_ipw_N30 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_green_Gefi_ACE2_ipw_ndpu30.csv")))[[1]][1:K]
+
+# rep_full_gformula_N30 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/full_gformula_ndpu30.csv")))[[1]][1:K]
+# rep_olive_gformula_N30 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_gformula_ndpu30.csv")))[[1]][1:K]
+# rep_olive_EGF_Gefi_gformula_N30 <- rep_full_gformula_N30
+# rep_olive_green_Gefi_ACE2_gformula_N30 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_green_Gefi_ACE2_gformula_ndpu30.csv")))[[1]][1:K]
+###################
+rep_full_aipw_N1000 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/full_aipw_ndpu1000.csv")))[[1]][1:K]
+rep_olive_aipw_N1000 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_aipw_ndpu1000.csv")))[[1]][1:K]
+rep_olive_EGF_Gefi_aipw_N1000 <- rep_full_aipw_N1000
+rep_olive_green_Gefi_ACE2_aipw_N1000 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_green_Gefi_ACE2_aipw_ndpu1000.csv")))[[1]][1:K]
+
+
+rep_full_ipw_N1000 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/full_ipw_ndpu1000.csv")))[[1]][1:K]
+rep_olive_ipw_N1000 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_ipw_ndpu1000.csv")))[[1]][1:K]
+rep_olive_EGF_Gefi_ipw_N1000 <- rep_full_ipw_N1000
+rep_olive_green_Gefi_ACE2_ipw_N1000 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_green_Gefi_ACE2_ipw_ndpu1000.csv")))[[1]][1:K]
+
+rep_full_gformula_N1000 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/full_gformula_ndpu1000.csv")))[[1]][1:K]
+rep_olive_gformula_N1000 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_gformula_ndpu1000.csv")))[[1]][1:K]
+rep_olive_EGF_Gefi_gformula_N1000 <- rep_full_gformula_N1000
+rep_olive_green_Gefi_ACE2_gformula_N1000 <- unname(as.vector(read.csv("/Users/sarataheri/Desktop/Simplified_LVM/Covid_case_study/data/Covid_hmc_fit/olive_green_Gefi_ACE2_gformula_ndpu1000.csv")))[[1]][1:K]
+
+df_ananke <- data.frame("CE" = c(rep_full_lm_N1000,
+                                 rep_olive_lm_N1000,
+                                 rep_olive_EGF_Gefi_lm_N1000,
+                                 rep_olive_green_Gefi_ACE2_lm_N1000,
+                                 rep_full_aipw_N1000,
+                                 rep_olive_aipw_N1000,
+                                 rep_olive_EGF_Gefi_aipw_N1000,
+                                 rep_olive_green_Gefi_ACE2_aipw_N1000,
+                                 rep_full_ipw_N1000,
+                                 rep_olive_ipw_N1000,
+                                 rep_olive_EGF_Gefi_ipw_N1000,
+                                 rep_olive_green_Gefi_ACE2_ipw_N1000,
+                                 rep_full_gformula_N1000,
+                                 rep_olive_gformula_N1000,
+                                 rep_olive_EGF_Gefi_gformula_N1000,
+                                 rep_olive_green_Gefi_ACE2_gformula_N1000
+                                 ),
+                        "N" = c(rep("(a)",K),
+                                rep("(b)",K),
+                                rep("(c)",K),
+                                rep("(d)",K),
+                                rep("(a)",K),
+                                rep("(b)",K),
+                                rep("(c)",K),
+                                rep("(d)",K),
+                                rep("(a)",K),
+                                rep("(b)",K),
+                                rep("(c)",K),
+                                rep("(d)",K),
+                                rep("(a)",K),
+                                rep("(b)",K),
+                                rep("(c)",K),
+                                rep("(d)",K)
+                                ),
+                        "model" = c(rep("Linear regression", 4*K),
+                                    rep("AIPW approach", 4*K),
+                                    rep("IPW approach", 4*K),
+                                    rep("gformnula approach", 4*K)
+                          )
+                        )
+```
+
+
+```{r}
+gg2 <- df_ananke %>% ggplot(aes(x = as.factor(N), y = CE, fill=model)) +
+  geom_boxplot(width = 0.8) +
+  geom_abline(intercept=0.77, slope=0) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 35,face="bold"),
+        legend.key.size = unit(2, "cm"),
+        axis.text.y=element_text(size=35),
+        axis.title.y=element_text(size=35,face="bold"),
+        axis.title.x = element_text(size=35,face="bold", #vjust = -0.3
+                                    ),
+        axis.text.x = element_text(#angle = 90, vjust = 0.5, hjust=1,
+          size = 35, face="bold"),
+        legend.position = "top",
+        plot.title = element_text(size = 35, hjust = 0.5, face = "bold")
+  ) +
+  scale_fill_brewer(palette="BuPu") +
+  guides(fill=guide_legend(nrow=2, byrow=TRUE)) +
+  xlab("Input network") +
+  #ylim(-2,4) + # for ananke
+  ylim(-0.5,2) + # for lm
+  ylab(expression(bold("ATE"))) #+
+  #scale_x_discrete(labels = c('a\nTWeight:52', 'b\nTWeight:6', 'c\nTWeight:8', 'd\nTWeight:20'))
+
+gg2
+#ggsave("/Users/sarataheri/GitHub/Simplified_LVM/img/Covid_boxplots.pdf", plot = gg2, width = 14, height = 11, dpi = 300, units = "in")
+```
+
+
+
+
