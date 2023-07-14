@@ -1,0 +1,1029 @@
+---
+title: "E.Coli"
+author: "Sara Taheri"
+date: "8/12/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+```
+
+
+```{r}
+data <- read.csv("/Users/sarataheri/GitHub/Simplified_LVM/EColi_case_study/Obs_intv_data/Expression_data.csv")
+```
+
+
+```{r}
+head(data)
+```
+
+Extract the related rows:
+
+```{r}
+small_data <- data %>% 
+  filter(log.TPM %in% 
+                c("b3067" ,"b3357","b3961","b0683", "b1334", "b1221", "b4124", "b0620", "b0564", "b0928",  "b0619", "b0972", "b0973", "b0977"))%>% 
+    mutate(name = c("appY", "dpiB" , "dpiA", "fur" , "aspC"  , "hyaA" , "hyaB" , "hyaF" , "narL" , "fnr" , "rpoD"  , "crp" , "oxyR" , "dcuR"),
+         label = c("b0564","b0619" ,"b0620","b0683", "b0928", "b0972", "b0973", "b0977", "b1221", "b1334", "b3067" , "b3357", "b3961", "b4124")
+         ) %>%
+  relocate(name) %>% 
+  relocate(label)
+#rownames(small_data) <- c("rpoD" , "crp" , "oxyR", "fur" , "fnr"  , "narL" , "dcuR" , "dpiA" , "appY" , "aspC"  , "dpiB" , "hyaA" , "hyaB" , "hyaF")
+small_data
+```
+
+
+
+```{r}
+intv_data1 <- small_data %>% select(name, fur__delfur_dpd__1, fur__delfur_dpd__2, fur__delfur_fe2__1, fur__delfur_fe2__2)
+
+appY = intv_data1 %>% slice(1) %>% unlist(., use.names=FALSE)
+dpiB = intv_data1 %>% slice(2) %>% unlist(., use.names=FALSE)
+dpiA = intv_data1 %>% slice(3) %>% unlist(., use.names=FALSE)
+fur = intv_data1 %>% slice(4) %>% unlist(., use.names=FALSE)
+aspC = intv_data1 %>% slice(5) %>% unlist(., use.names=FALSE)
+hyaA = intv_data1 %>% slice(6) %>% unlist(., use.names=FALSE)
+hyaB = intv_data1 %>% slice(7) %>% unlist(., use.names=FALSE)
+hyaF = intv_data1 %>% slice(8) %>% unlist(., use.names=FALSE)
+narL = intv_data1 %>% slice(9) %>% unlist(., use.names=FALSE)
+fnr = intv_data1 %>% slice(10) %>% unlist(., use.names=FALSE)
+rpoD = intv_data1 %>% slice(11) %>% unlist(., use.names=FALSE)
+crp = intv_data1 %>% slice(12) %>% unlist(., use.names=FALSE)
+oxyR = intv_data1 %>% slice(13) %>% unlist(., use.names=FALSE)
+dcuR = intv_data1 %>% slice(14) %>% unlist(., use.names=FALSE)
+
+
+
+intv_data <- data.frame("rpoD" = rpoD, "crp" = crp, "oxyR" = oxyR, "fur" = fur,
+                        "fnr" = fnr, "narL" = narL, "dcuR" = dcuR, "dpiA" = dpiA,
+                        "appY" = appY, "aspC" = aspC, "dpiB" = dpiB, "hyaA" = hyaA,
+                        "hyaB" = hyaB, "hyaF" = hyaF)
+intv_data <- intv_data[-1,]
+#intv_data <- intv_data[-2,]
+intv_data <- apply(intv_data[ , ], 2,function(x) as.numeric(as.character(x)))
+intv_data <- as.data.frame(intv_data)
+intv_data
+```
+
+```{r}
+obs_data1 <- small_data %>% select(-c(name,
+                                      fur__delfur_dpd__1,
+                                      fur__delfur_dpd__2,
+                                      fur__delfur_fe2__1,
+                                      fur__delfur_fe2__2,
+                                      crp__delcrp_glyc__3,
+                                      ica__bw_delpurR_cytd__2,
+                                      pal__tartr_ale28__1, #not interventional
+                                      ica__bw_delpurR_cytd__2, #not interventional
+                                      ssw__glc_ac_glc1__1, #not interventional
+                                      X42c__wt_42c__1,#not interventional
+                                      rpoB__rpoBE672K_lb__2,#not interventional
+                                      rpoB__rpoBE672K_glc__2,#not interventional
+                                      rpoB__rpoBE672K_glc__1,#not interventional
+                                      rpoB__rpoBE546V_lb__1#not interventional
+                                      ))
+
+appY = obs_data1 %>% slice(1) %>% unlist(., use.names=FALSE)
+dpiB = obs_data1 %>% slice(2) %>% unlist(., use.names=FALSE)
+dpiA = obs_data1 %>% slice(3) %>% unlist(., use.names=FALSE)
+fur = obs_data1 %>% slice(4) %>% unlist(., use.names=FALSE)
+aspC = obs_data1 %>% slice(5) %>% unlist(., use.names=FALSE)
+hyaA = obs_data1 %>% slice(6) %>% unlist(., use.names=FALSE)
+hyaB = obs_data1 %>% slice(7) %>% unlist(., use.names=FALSE)
+hyaF = obs_data1 %>% slice(8) %>% unlist(., use.names=FALSE)
+narL = obs_data1 %>% slice(9) %>% unlist(., use.names=FALSE)
+fnr = obs_data1 %>% slice(10) %>% unlist(., use.names=FALSE)
+rpoD = obs_data1 %>% slice(11) %>% unlist(., use.names=FALSE)
+crp = obs_data1 %>% slice(12) %>% unlist(., use.names=FALSE)
+oxyR = obs_data1 %>% slice(13) %>% unlist(., use.names=FALSE)
+dcuR = obs_data1 %>% slice(14) %>% unlist(., use.names=FALSE)
+
+obs_data <- data.frame("rpoD" = rpoD, "crp" = crp, "oxyR" = oxyR, "fur" = fur,
+                       "fnr" = fnr, "narL" = narL, "dcuR" = dcuR, "dpiA" = dpiA,
+                       "appY" = appY, "aspC" = aspC, "dpiB" = dpiB, "hyaA" = hyaA,
+                       "hyaB" = hyaB, "hyaF" = hyaF)
+obs_data <- obs_data[-c(1,2),]
+
+obs_data <- apply(obs_data[ , ], 2,function(x) as.numeric(as.character(x)))
+obs_data <- as.data.frame(obs_data)
+head(obs_data)
+```
+
+Removing the outliers:
+
+```{r}
+summary(obs_data$dpiA)
+#obs_data <- obs_data %>% filter(dpiA < 4)
+#summary(obs_data$dpiA)
+```
+
+```{r}
+#write.csv(obs_data, "obs_data_ecoli_without_zeros.csv")
+```
+
+# Estimating ATE from data
+
+```{r}
+mean(intv_data[c(1,3,4),"dpiA"])
+```
+
+# Estimation of ATE with linear regression BN and GAN simulated data and over real data
+
+Here I tried to estimate ATE for a couple of examples using the real data:
+
+```{r}
+lm_dpiA_Given_fur_crp_rpoD <- lm(dpiA ~ fur + crp + rpoD, obs_data)
+lm_dpiA_Given_fur_crp_rpoD
+b_dpiA_Given_fur_crp_rpoD <- coef(lm_dpiA_Given_fur_crp_rpoD) ['fur']
+
+dpiA_Given_fur_crp_rpoD <- coef(lm_dpiA_Given_fur_crp_rpoD) ['(Intercept)'] + 
+                           coef(lm_dpiA_Given_fur_crp_rpoD) ['crp'] * obs_data$crp +
+                           coef(lm_dpiA_Given_fur_crp_rpoD) ['rpoD'] * obs_data$rpoD
+summary(dpiA_Given_fur_crp_rpoD)
+var(dpiA_Given_fur_crp_rpoD)
+
+lm <- lm(dpiA ~ fur + crp + oxyR + rpoD + soxS, obs_data)
+dpiA_Given_fur <- coef(lm) ['(Intercept)'] + 
+  coef(lm) ['crp'] * GAN_data[[1]]$crp +
+  coef(lm) ['oxyR'] * GAN_data[[1]]$oxyR +
+  coef(lm) ['rpoD'] * GAN_data[[1]]$rpoD +
+  coef(lm) ['soxS'] * GAN_data[[1]]$soxS
+summary(dpiA_Given_fur)
+var(dpiA_Given_fur)
+```
+
+```{r}
+lm_dcuR_Given_fur_crp_rpoD_oxyR <- lm(dcuR ~ fur + crp + rpoD + oxyR, obs_data)
+dcuR_Given_fur_crp_rpoD_oxyR <- coef(lm_dcuR_Given_fur_crp_rpoD_oxyR) ['(Intercept)'] + 
+                                coef(lm_dcuR_Given_fur_crp_rpoD_oxyR) ['crp'] * obs_data$crp +
+                                coef(lm_dcuR_Given_fur_crp_rpoD_oxyR) ['rpoD'] * obs_data$rpoD +
+                                coef(lm_dcuR_Given_fur_crp_rpoD_oxyR) ['oxyR'] * obs_data$narL
+summary(dcuR_Given_fur_crp_rpoD_oxyR)
+var(dcuR_Given_fur_crp_rpoD_oxyR)
+```
+
+Here I got the results for running the linear case for the GAN and BN approach using Algorithm 1 in the paper:
+
+```{r}
+BN_pathwise <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/BN_SimulatedResults/BN_Path_furfnrdpiA_results.rdata")
+summary_path <- BN_pathwise %>% group_by(formula,stage_1_formula) %>% summarise(N=n(),mean=mean(Ey_dox),sd=sd(Ey_dox)) %>% arrange(sd)
+BN_backdoor <- read.csv("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/BN_SimulatedResults/BN_SimulatedDatasets_Backdoor_EdpiA_dofur0.csv")
+
+GAN_pathwise <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/GAN_Path_furfnrdpiA_results.rdata")
+GAN_backdoor <- read.csv("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/gan_backdoor.csv")
+```
+
+```{r}
+# (b) full network
+lm_BN_result_full <- BN_pathwise %>% filter(formula == "dpiA ~ fnr + crp + rpoD + oxyR + dcuR + narL + fur" & stage_1_formula == "fnr ~ fur + rpoD")
+lm_GAN_result_full <- GAN_pathwise %>% filter(formula == "dpiA ~ fnr + crp + rpoD + oxyR + dcuR + narL + fur" & stage_1_formula == "fnr ~ fur + rpoD")
+# (c) olive
+lm_BN_result_olive <- BN_backdoor %>% filter(formula == "dpiA ~ fur + crp + rpoD")
+lm_GAN_result_olive <- GAN_backdoor %>% filter(formula == "dpiA ~ fur + crp + rpoD")
+# (d) Olive + fnr
+lm_BN_result_olive_fnr <- BN_pathwise %>% filter(formula == "dpiA ~ fnr + fur + rpoD + dcuR + crp" & stage_1_formula == "fnr ~ fur + rpoD + crp")
+lm_GAN_result_olive_fnr <- GAN_pathwise %>% filter(formula == "dpiA ~ fnr + fur + rpoD + dcuR + crp" & stage_1_formula == "fnr ~ fur + rpoD + crp")
+# (e) Olive + green
+lm_BN_result_olive_green <- BN_pathwise %>% filter(formula == "dpiA ~ fnr + fur + rpoD + dcuR + narL + crp" & stage_1_formula == "fnr ~ fur + rpoD")
+lm_GAN_result_olive_green <- GAN_pathwise %>% filter(formula == "dpiA ~ fnr + fur + rpoD + dcuR + narL + crp" & stage_1_formula == "fnr ~ fur + rpoD")
+```
+
+```{r}
+saveRDS(lm_BN_result_full, "/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/results/EColi_full_lm_BN_ndpu262.RData")
+saveRDS(lm_BN_result_olive, "/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/results/EColi_olive_lm_BN_ndpu262.RData")
+saveRDS(lm_BN_result_olive_fnr, "/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/results/EColi_olive_fnr_lm_BN_ndpu262.RData")
+saveRDS(lm_BN_result_olive_green, "/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/results/EColi_olive_green_lm_BN_ndpu262.RData")
+```
+
+```{r}
+saveRDS(lm_GAN_result_full, "/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/results/EColi_full_lm_GAN_ndpu262.RData")
+saveRDS(lm_GAN_result_olive, "/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/results/EColi_olive_lm_GAN_ndpu262.RData")
+saveRDS(lm_GAN_result_olive_fnr, "/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/results/EColi_olive_fnr_lm_GAN_ndpu262.RData")
+saveRDS(lm_GAN_result_olive_green, "/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/results/EColi_olive_green_lm_GAN_ndpu262.RData")
+```
+
+
+```{r}
+dataBN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/BN_SimulatedResults/BN_SimulatedDatasets.rdata")
+# full model that includes red nodes
+data = dataBN
+BN_result <- c()
+for (i in 1:100) {
+  lm_dpiA_Given_fnr_rest <- lm(dpiA ~ fnr + fur + rpoD + oxyR + dcuR + narL + crp + aspC + dpiB + hyaA + appY + hyaB + hyaF, data[[i]])
+  lm_fnr_Given_fur_rpoD_crp <- lm(fnr ~ fur + rpoD + crp, data[[i]])
+  
+  fnr_Given_fur_rpoD_crp <- coef(lm_fnr_Given_fur_rpoD_crp) ['(Intercept)'] + 
+    coef(lm_fnr_Given_fur_rpoD_crp) ['rpoD'] * data[[i]]$rpoD
+  coef(lm_fnr_Given_fur_rpoD_crp) ['crp'] * data[[i]]$crp
+  
+  dpiA_Given_fnr_rest <- coef(lm_dpiA_Given_fnr_rest) ['(Intercept)'] +
+    coef(lm_dpiA_Given_fnr_rest) ['fnr']  * fnr_Given_fur_rpoD_crp +
+    coef(lm_dpiA_Given_fnr_rest) ['rpoD'] * data[[i]]$rpoD +
+  coef(lm_dpiA_Given_fnr_rest) ['oxyR'] * data[[i]]$oxyR + 
+  coef(lm_dpiA_Given_fnr_rest) ['dcuR'] * data[[i]]$dcuR + 
+  coef(lm_dpiA_Given_fnr_rest) ['narL'] * data[[i]]$narL + 
+  coef(lm_dpiA_Given_fnr_rest) ['crp']  * data[[i]]$crp + 
+  coef(lm_dpiA_Given_fnr_rest) ['aspC'] * data[[i]]$aspC + 
+  coef(lm_dpiA_Given_fnr_rest) ['dpiB'] * data[[i]]$dpiB +
+  coef(lm_dpiA_Given_fnr_rest) ['hyaA'] * data[[i]]$hyaA +
+  coef(lm_dpiA_Given_fnr_rest) ['appY'] * data[[i]]$appY +
+  coef(lm_dpiA_Given_fnr_rest) ['hyaB'] * data[[i]]$hyaB +
+  coef(lm_dpiA_Given_fnr_rest) ['hyaF'] * data[[i]]$hyaF
+  
+  BN_result <- c(BN_result, mean(dpiA_Given_fnr_rest))
+}
+#saveRDS(BN_result,"/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/results/EColi_full_red_lm_BN_ndpu262.RData")
+```
+
+
+```{r}
+dataGAN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/GAN_simulated_data/GAN_datasets.RData")
+
+# full model that includes red nodes
+data = dataGAN
+GAN_result <- c()
+for (i in 1:100) {
+  lm_dpiA_Given_fnr_rest <- lm(dpiA ~ fnr + fur + rpoD + oxyR + dcuR + narL + crp + aspC + dpiB + hyaA + appY + hyaB + hyaF, data[[i]][1:262,])
+  lm_fnr_Given_fur_rpoD_crp <- lm(fnr ~ fur + rpoD + crp, data[[i]][1:262,])
+  
+  fnr_Given_fur_rpoD_crp <- coef(lm_fnr_Given_fur_rpoD_crp) ['(Intercept)'] + 
+    coef(lm_fnr_Given_fur_rpoD_crp) ['rpoD'] * data[[i]][1:262,]$rpoD
+  coef(lm_fnr_Given_fur_rpoD_crp) ['crp'] * data[[i]][1:262,]$crp
+  
+  dpiA_Given_fnr_rest <- coef(lm_dpiA_Given_fnr_rest) ['(Intercept)'] +
+    coef(lm_dpiA_Given_fnr_rest) ['fnr']  * fnr_Given_fur_rpoD_crp +
+    coef(lm_dpiA_Given_fnr_rest) ['rpoD'] * data[[i]][1:262,]$rpoD +
+  coef(lm_dpiA_Given_fnr_rest) ['oxyR'] * data[[i]][1:262,]$oxyR + 
+  coef(lm_dpiA_Given_fnr_rest) ['dcuR'] * data[[i]][1:262,]$dcuR + 
+  coef(lm_dpiA_Given_fnr_rest) ['narL'] * data[[i]][1:262,]$narL + 
+  coef(lm_dpiA_Given_fnr_rest) ['crp']  * data[[i]][1:262,]$crp + 
+  coef(lm_dpiA_Given_fnr_rest) ['aspC'] * data[[i]][1:262,]$aspC + 
+  coef(lm_dpiA_Given_fnr_rest) ['dpiB'] * data[[i]][1:262,]$dpiB +
+  coef(lm_dpiA_Given_fnr_rest) ['hyaA'] * data[[i]][1:262,]$hyaA +
+  coef(lm_dpiA_Given_fnr_rest) ['appY'] * data[[i]][1:262,]$appY +
+  coef(lm_dpiA_Given_fnr_rest) ['hyaB'] * data[[i]][1:262,]$hyaB +
+  coef(lm_dpiA_Given_fnr_rest) ['hyaF'] * data[[i]][1:262,]$hyaF
+  
+  GAN_result <- c(GAN_result, mean(dpiA_Given_fnr_rest))
+}
+saveRDS(GAN_result,"/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/results/EColi_full_red_lm_GAN_ndpu262.RData")
+```
+
+
+# Causal generative approach
+
+## Full model and also the case with all the mediators (Fig 8 (a) and (d))
+
+```{r}
+model_str_EColi <- "
+    data {
+        int D;
+        vector[D] rpoD;
+        vector[D] crp;
+        vector[D] fur;
+        vector[D] fnr;
+        vector[D] narL;
+        vector[D] dcuR;
+        vector[D] dpiA;
+    }
+  parameters {
+       real<lower=0> mu_rpoD; 
+       real<lower=0> sigma_rpoD;
+       
+       real<lower=-2, upper=2> beta0_crp;
+       real<lower=-2, upper=2> beta_rpoDTocrp;
+       
+       real<lower=-2, upper=2> beta0_fnr;
+       real<lower=-2, upper=2> beta_furTofnr;
+       real<lower=-2, upper=2> beta_rpoDTofnr;
+       
+       real<lower=-2, upper=2> beta0_narL;
+       real<lower=-2, upper=2> beta_fnrTonarL;
+       real<lower=-2, upper=2> beta_rpoDTonarL;
+       
+       real<lower=-2, upper=2> beta0_dcuR;
+       real<lower=-2, upper=2> beta_crpTodcuR;
+       real<lower=-2, upper=2> beta_fnrTodcuR;
+       real<lower=-2, upper=2> beta_rpoDTodcuR;
+       real<lower=-2, upper=2> beta_narLTodcuR;
+       
+       real<lower=-2, upper=2> beta0_dpiA;
+       real<lower=-2, upper=2> beta_crpTodpiA;
+       real<lower=-2, upper=2> beta_rpoDTodpiA;
+       real<lower=-2, upper=2> beta_fnrTodpiA;
+       real<lower=-2, upper=2> beta_dcuRTodpiA;
+       real<lower=-2, upper=2> beta_narLTodpiA;
+    }
+    transformed parameters {
+      vector[D] crp_loc;
+      vector[D] fnr_loc;
+      vector[D] narL_loc;
+      vector[D] dcuR_loc;
+      vector[D] dpiA_loc;
+      for (i in 1:D){
+        crp_loc[i] = 6 / (1 + exp(-beta0_crp - rpoD[i] * beta_rpoDTocrp));
+        fnr_loc[i] = 11.57 / (1 + exp(-beta0_fnr - fur[i] * beta_furTofnr - rpoD[i] * beta_rpoDTofnr));
+        narL_loc[i] = 3.7 / (1 + exp(-beta0_narL - fnr[i] * beta_fnrTonarL - rpoD[i] * beta_rpoDTonarL));
+        dcuR_loc[i] = 4.2 / (1 + exp(-beta0_dcuR - crp[i] * beta_crpTodcuR - fnr[i] * beta_fnrTodcuR - rpoD[i] * beta_rpoDTodcuR - narL[i] * beta_narLTodcuR));
+        dpiA_loc[i] = 3.8 / (1 + exp(-beta0_dpiA - crp[i] * beta_crpTodpiA - fnr[i] * beta_fnrTodpiA - rpoD[i] * beta_rpoDTodpiA - narL[i] * beta_narLTodpiA - dcuR[i] * beta_dcuRTodpiA));
+      }
+    }
+    model {
+        mu_rpoD ~ normal(5.7, 1);
+        sigma_rpoD ~ normal(1.6,1);
+        
+        beta0_crp ~ normal(0,10);
+        beta_rpoDTocrp ~ normal(0,10);
+        
+        beta0_fnr ~ normal(0,10);
+        beta_furTofnr ~ normal(0,10);
+        beta_rpoDTofnr ~ normal(0,10);
+        
+        beta0_narL ~ normal(0,10);
+        beta_fnrTonarL ~ normal(0,10);
+        beta_rpoDTonarL ~ normal(0,10);
+        
+        beta0_dcuR ~ normal(0,10);
+        beta_crpTodcuR ~ normal(0,10);
+        beta_fnrTodcuR ~ normal(0,10);
+        beta_rpoDTodcuR ~ normal(0,10);
+        beta_narLTodcuR ~ normal(0,10);
+        
+        beta0_dpiA ~ normal(0,10);
+        beta_crpTodpiA ~ normal(0,10);
+        beta_rpoDTodpiA ~ normal(0,10);
+        beta_fnrTodpiA ~ normal(0,10);
+        beta_dcuRTodpiA ~ normal(0,10);
+        beta_narLTodpiA ~ normal(0,10);
+        
+        rpoD ~ normal(mu_rpoD, sigma_rpoD);
+        crp ~ normal(crp_loc,5);
+        fnr ~ normal(fnr_loc,0.5);
+        narL ~ normal(narL_loc,0.7);
+        dcuR ~ normal(dcuR_loc,0.76);
+        dpiA ~ normal(dpiA_loc,0.6);
+    }
+"
+```
+
+```{r, message=FALSE, warning=FALSE}
+mod_EColi <- rstan::stan_model(model_code = model_str_EColi)
+```
+
+```{r}
+BN_datasets <- readRDS("Experimental_case_study/BN_SimulatedDatasets.RData")
+obs_data_list <- BN_datasets
+obs_data_list[[length(BN_datasets)+1]] <- obs_data
+```
+
+```{r}
+GAN_datasets <- list()
+for (i in 1:100) {
+  GAN_datasets[[i]] <- read.csv(paste("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/GAN/GAN_simulated data/simdata",i,".csv",sep=""))
+}
+obs_data_list <- GAN_datasets
+obs_data_list[[length(BN_datasets)+1]] <- obs_data
+```
+
+
+```{r, echo = FALSE}
+K=100
+ndpu = nrow(obs_data)
+hmc_fit_list <- rep(list(list()), K)
+
+start_time <- Sys.time()
+for (num_data_points in ndpu) {
+  for (data_count in 1:K) {
+    print(data_count)
+    data_list <- list(D=num_data_points,
+                      rpoD = obs_data_list[[data_count]]$rpoD[1:num_data_points],
+                      crp = obs_data_list[[data_count]]$crp[1:num_data_points],
+                      fur = obs_data_list[[data_count]]$fur[1:num_data_points],
+                      fnr = obs_data_list[[data_count]]$fnr[1:num_data_points],
+                      narL = obs_data_list[[data_count]]$narL[1:num_data_points],
+                      dcuR = obs_data_list[[data_count]]$dcuR[1:num_data_points],
+                      dpiA = obs_data_list[[data_count]]$dpiA[1:num_data_points]
+    )
+    
+    hmc_fit_list[[data_count]][[paste0("num_data_points_",num_data_points)]] <- rstan::sampling(mod_EColi,
+                                                                                                data=data_list,
+                                                                                                chains = 2,
+                                                                                                iter = 3000,
+                                                                                                warmup = 1500,
+                                                                                                seed = 1)
+  }
+  
+}
+end_time <- Sys.time()
+Time = end_time - start_time
+print(Time)
+#Time difference of 17.49014 mins mins total
+#saveRDS(hmc_fit_list,file = "data/IGF_hmc_fit/hmc_fit_list_IGF_olive.RData")
+```
+
+
+
+### Mutilated model
+
+```{r}
+mutilated_model_EColi <- function(mu_rpoD, sigma_rpoD,
+                                  beta0_crp, beta_rpoDTocrp, 
+                                  beta0_fnr, beta_furTofnr, beta_rpoDTofnr,
+                                  beta0_narL, beta_fnrTonarL, beta_rpoDTonarL,
+                                  beta0_dcuR, beta_crpTodcuR, beta_fnrTodcuR, beta_rpoDTodcuR, beta_narLTodcuR,
+                                  beta0_dpiA, beta_crpTodpiA, beta_rpoDTodpiA, beta_fnrTodpiA, beta_dcuRTodpiA, beta_narLTodpiA,
+                                  fur, num_gen_samples,seed) {
+  set.seed(seed)
+  rpoD = rnorm(num_gen_samples, mu_rpoD, sigma_rpoD) 
+  crp = 6 / (1 + exp(-beta0_crp - rpoD * beta_rpoDTocrp))
+  fur = rep(fur, num_gen_samples)
+  fnr = 11.57 / (1 + exp(-beta0_fnr - fur * beta_furTofnr - rpoD * beta_rpoDTofnr))
+  narL = 3.7 / (1 + exp(-beta0_narL - fnr * beta_fnrTonarL - rpoD * beta_rpoDTonarL))
+  dcuR = 4.2 / (1 + exp(-beta0_dcuR - crp * beta_crpTodcuR - fnr * beta_fnrTodcuR - rpoD * beta_rpoDTodcuR - narL * beta_narLTodcuR))
+  dpiA = 3.8 / (1 + exp(-beta0_dpiA - crp * beta_crpTodpiA - fnr * beta_fnrTodpiA - rpoD * beta_rpoDTodpiA - narL * beta_narLTodpiA - dcuR * beta_dcuRTodpiA))
+  return(mean(dpiA))
+}
+```
+
+```{r}
+parameters <- c("mu_rpoD", "sigma_rpoD",
+                "beta0_crp", "beta_rpoDTocrp",
+                "beta0_fnr", "beta_furTofnr", "beta_rpoDTofnr",
+                "beta0_narL", "beta_fnrTonarL", "beta_rpoDTonarL",
+                "beta0_dcuR", "beta_crpTodcuR", "beta_fnrTodcuR", "beta_rpoDTodcuR", "beta_narLTodcuR",
+                "beta0_dpiA", "beta_crpTodpiA", "beta_rpoDTodpiA", "beta_fnrTodpiA", "beta_dcuRTodpiA", "beta_narLTodpiA"
+                )
+```
+
+```{r, echo = FALSE}
+#hmc_fit_list <- readRDS("data/IGF_hmc_fit/hmc_fit_list_IGF_olive_ndpu20.RData")
+
+CE_list <- list()
+means_hmc <- c()
+J <- c()
+
+for (num_data_points in ndpu) {
+  for (data_count in 1:K) {
+    samples_hmc <- rstan::extract(hmc_fit_list[[data_count]][[paste0("num_data_points_",num_data_points)]], parameters)
+    for (j in 1:3000) {
+      J <-  c(J,mutilated_model_EColi(mu_rpoD = (samples_hmc$mu_rpoD)[j],
+                                      sigma_rpoD = (samples_hmc$sigma_rpoD)[j],
+                                      beta0_crp = (samples_hmc$beta0_crp)[j],
+                                      beta_rpoDTocrp = (samples_hmc$beta_rpoDTocrp)[j],
+                                      
+                                      beta0_fnr = (samples_hmc$beta0_fnr)[j],
+                                      beta_furTofnr = (samples_hmc$beta_furTofnr)[j],
+                                      beta_rpoDTofnr = (samples_hmc$beta_rpoDTofnr)[j],
+                                      
+                                      beta0_narL = (samples_hmc$beta0_narL)[j],
+                                      beta_fnrTonarL = (samples_hmc$beta_fnrTonarL)[j],
+                                      beta_rpoDTonarL = (samples_hmc$beta_rpoDTonarL)[j],
+                                      
+                                      beta0_dcuR = (samples_hmc$beta0_dcuR)[j],
+                                      beta_crpTodcuR = (samples_hmc$beta_crpTodcuR)[j],
+                                      beta_fnrTodcuR = (samples_hmc$beta_fnrTodcuR)[j],
+                                      beta_rpoDTodcuR = (samples_hmc$beta_rpoDTodcuR)[j],
+                                      beta_narLTodcuR = (samples_hmc$beta_narLTodcuR)[j],
+                                      
+                                      beta0_dpiA = (samples_hmc$beta0_dpiA)[j],
+                                      beta_crpTodpiA = (samples_hmc$beta_crpTodpiA)[j],
+                                      beta_rpoDTodpiA = (samples_hmc$beta_rpoDTodpiA)[j],
+                                      beta_fnrTodpiA = (samples_hmc$beta_fnrTodpiA)[j],
+                                      beta_dcuRTodpiA = (samples_hmc$beta_dcuRTodpiA)[j],
+                                      beta_narLTodpiA = (samples_hmc$beta_narLTodpiA)[j],
+                                      fur = 0,
+                                      num_gen_samples = 1000,
+                                      seed = 1))
+      
+    }
+    means_hmc <- c(means_hmc,mean(J))
+    J <- c()
+  }
+  #CE_list[[paste0("num_data_points_",num_data_points)]] <- means_hmc
+  #means_hmc <- c()
+}
+
+
+#saveRDS(means_hmc,file = "/Users/sarataheri/Desktop/Simplified_LVM/Experimental_case_study/data/EColi_full_cg_GAN_ndpu262.RData")
+```
+
+```{r}
+summary(means_hmc)
+```
+
+
+## Olive nodes with only one mediator, fnr (Fig 8 (c))
+
+```{r}
+model_str_EColi <- "
+    data {
+        int D;
+        vector[D] rpoD;
+        vector[D] crp;
+        vector[D] fur;
+        vector[D] fnr;
+        vector[D] dpiA;
+    }
+  parameters {
+       real<lower=0> mu_rpoD; 
+       real<lower=0> sigma_rpoD;
+       
+       real<lower=-2, upper=2> beta0_crp;
+       real<lower=-2, upper=2> beta_rpoDTocrp;
+       
+       real<lower=-2, upper=2> beta0_fnr;
+       real<lower=-2, upper=2> beta_furTofnr;
+       real<lower=-2, upper=2> beta_rpoDTofnr;
+       
+       real<lower=-2, upper=2> beta0_dpiA;
+       real<lower=-2, upper=2> beta_crpTodpiA;
+       real<lower=-2, upper=2> beta_rpoDTodpiA;
+       real<lower=-2, upper=2> beta_fnrTodpiA;
+       
+       vector[D] U;
+    }
+    transformed parameters {
+      vector[D] crp_loc;
+      vector[D] fnr_loc;
+      vector[D] dpiA_loc;
+      for (i in 1:D){
+        crp_loc[i]  = 6   / (1 + exp(-beta0_crp - rpoD[i] * beta_rpoDTocrp));
+        fnr_loc[i] = 11 / (1 + exp(-beta0_fnr - fur[i] * beta_furTofnr - rpoD[i] * beta_rpoDTofnr));
+        dpiA_loc[i] = 3.8 / (1 + exp(-beta0_dpiA - crp[i] * beta_crpTodpiA - rpoD[i] * beta_rpoDTodpiA - fnr[i] * beta_fnrTodpiA ));
+      }
+    }
+    model {
+        mu_rpoD ~ normal(5.7, 1);
+        sigma_rpoD ~ normal(1.6,1);
+        
+        beta0_crp ~ normal(0,10);
+        beta_rpoDTocrp ~ normal(0,10);
+        
+        beta0_fnr ~ normal(0,10);
+        beta_furTofnr ~ normal(0,10);
+        beta_rpoDTofnr ~ normal(0,10);
+        
+        beta0_dpiA ~ normal(0,10);
+        beta_crpTodpiA ~ normal(0,10);
+        beta_rpoDTodpiA ~ normal(0,10);
+        beta_fnrTodpiA ~ normal(0,10);
+        
+        rpoD ~ normal(mu_rpoD, sigma_rpoD);
+        crp ~ normal(crp_loc,5);
+        fnr ~ normal(fnr_loc,0.57);
+        dpiA ~ normal(dpiA_loc,0.6);
+    }
+"
+```
+
+```{r, message=FALSE, warning=FALSE}
+mod_EColi <- rstan::stan_model(model_code = model_str_EColi)
+```
+
+```{r}
+BN_datasets <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/BN_SimulatedResults/BN_SimulatedDatasets.rdata")
+obs_data_list <- BN_datasets
+obs_data_list[[length(BN_datasets)+1]] <- obs_data
+```
+
+```{r}
+GAN_datasets <- list()
+for (i in 1:100) {
+  GAN_datasets[[i]] <- read.csv(paste("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/GAN/GAN_simulated data/simdata",i,".csv",sep=""))
+}
+obs_data_list <- GAN_datasets
+obs_data_list[[length(BN_datasets)+1]] <- obs_data
+```
+
+```{r, echo = FALSE}
+K=100
+ndpu = nrow(obs_data)
+hmc_fit_list <- rep(list(list()), K)
+
+start_time <- Sys.time()
+for (num_data_points in ndpu) {
+  for (data_count in 1:K) {
+    print(data_count)
+    data_list <- list(D=num_data_points,
+                      rpoD = obs_data_list[[data_count]]$rpoD[1:num_data_points],
+                      crp = obs_data_list[[data_count]]$crp[1:num_data_points],
+                      fur = obs_data_list[[data_count]]$fur[1:num_data_points],
+                      fnr = obs_data_list[[data_count]]$fnr[1:num_data_points],
+                      dpiA = obs_data_list[[data_count]]$dpiA[1:num_data_points]
+    )
+    
+    hmc_fit_list[[data_count]][[paste0("num_data_points_",num_data_points)]] <- rstan::sampling(mod_EColi,
+                                                                                                data=data_list,
+                                                                                                chains = 2,
+                                                                                                iter = 3000,
+                                                                                                warmup = 1500,
+                                                                                                seed = 1)
+  }
+  
+}
+end_time <- Sys.time()
+Time = end_time - start_time
+print(Time)
+#Time difference of 22.0289 hours total
+saveRDS(hmc_fit_list,file = "hmc_fit_list_EColi_Olive_fnr_ndpu262.RData")
+```
+
+```{r}
+K=100
+ndpu = nrow(obs_data)
+hmc_fit_list <- rep(list(list()), K)
+
+hmc_fit_list_1To20 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Experimental_case_study/data/hmc_fit_list_EColi_Olive_fnr_BN_ndpu262_1To20.RData")
+hmc_fit_list_21To40 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Experimental_case_study/data/hmc_fit_list_EColi_Olive_fnr_BN_ndpu262_21To40.RData")
+hmc_fit_list_41To60 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Experimental_case_study/data/hmc_fit_list_EColi_Olive_fnr_BN_ndpu262_41To60.RData")
+hmc_fit_list_61To80 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Experimental_case_study/data/hmc_fit_list_EColi_Olive_fnr_BN_ndpu262_61To80.RData")
+hmc_fit_list_81To100 <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Experimental_case_study/data/hmc_fit_list_EColi_Olive_fnr_BN_ndpu262_81To100.RData")
+
+for (num_data_points in ndpu) {
+  for (data_count in 1:20) {
+    hmc_fit_list[[data_count]][[paste0("num_data_points_",num_data_points)]] <- hmc_fit_list_1To20[[data_count]][[paste0("num_data_points_",num_data_points)]]
+  }}
+
+for (num_data_points in ndpu) {
+  for (data_count in 21:40) {
+    hmc_fit_list[[data_count]][[paste0("num_data_points_",num_data_points)]] <- hmc_fit_list_21To40[[data_count]][[paste0("num_data_points_",num_data_points)]]
+  }}
+
+for (num_data_points in ndpu) {
+  for (data_count in 41:60) {
+    hmc_fit_list[[data_count]][[paste0("num_data_points_",num_data_points)]] <- hmc_fit_list_41To60[[data_count]][[paste0("num_data_points_",num_data_points)]]
+  }}
+
+for (num_data_points in ndpu) {
+  for (data_count in 61:80) {
+    hmc_fit_list[[data_count]][[paste0("num_data_points_",num_data_points)]] <- hmc_fit_list_61To80[[data_count]][[paste0("num_data_points_",num_data_points)]]
+  }}
+
+for (num_data_points in ndpu) {
+  for (data_count in 81:100) {
+    hmc_fit_list[[data_count]][[paste0("num_data_points_",num_data_points)]] <- hmc_fit_list_81To100[[data_count]][[paste0("num_data_points_",num_data_points)]]
+  }}
+
+saveRDS(hmc_fit_list, "/Users/sarataheri/Desktop/Simplified_LVM/Experimental_case_study/data/hmc_fit_list_EColi_Olive_fnr_BN_ndpu262.RDat")
+```
+
+### Mutilated model
+
+```{r}
+mutilated_model_EColi <- function(mu_rpoD, sigma_rpoD,
+                                  beta0_crp, beta_rpoDTocrp, 
+                                  beta0_fnr, beta_furTofnr, beta_rpoDTofnr,
+                                  beta0_dpiA, beta_crpTodpiA, beta_rpoDTodpiA, beta_fnrTodpiA,
+                                  fur, num_gen_samples,seed) {
+  set.seed(seed)
+  rpoD = rnorm(num_gen_samples, mu_rpoD, sigma_rpoD) 
+  crp = 6 / (1 + exp(-beta0_crp - rpoD * beta_rpoDTocrp))
+  fur = rep(fur, num_gen_samples)
+  fnr = 11 / (1 + exp(-beta0_fnr - fur * beta_furTofnr - rpoD * beta_rpoDTofnr))
+  dpiA = 3.8 / (1 + exp(-beta0_dpiA - crp * beta_crpTodpiA - rpoD * beta_rpoDTodpiA - fnr * beta_fnrTodpiA))
+  return(mean(dpiA))
+}
+```
+
+```{r}
+parameters <- c("mu_rpoD", "sigma_rpoD",
+                "beta0_crp", "beta_rpoDTocrp",
+                "beta0_fnr", "beta_furTofnr", "beta_rpoDTofnr",
+                "beta0_dpiA", "beta_crpTodpiA", "beta_rpoDTodpiA", "beta_fnrTodpiA"
+                )
+```
+
+```{r, echo = FALSE}
+#hmc_fit_list <- readRDS("/Users/sarataheri/Desktop/Simplified_LVM/Experimental_case_study/data/hmc_fit_list_EColi_Olive_fnr_ndpu262.RData")
+
+CE_list <- list()
+means_hmc <- c()
+J <- c()
+
+for (num_data_points in ndpu) {
+  for (data_count in 1:K) {
+    samples_hmc <- rstan::extract(hmc_fit_list[[data_count]][[paste0("num_data_points_",num_data_points)]], parameters)
+    for (j in 1:3000) {
+      J <-  c(J,mutilated_model_EColi(mu_rpoD = (samples_hmc$mu_rpoD)[j],
+                                      sigma_rpoD = (samples_hmc$sigma_rpoD)[j],
+                                      
+                                      beta0_crp = (samples_hmc$beta0_crp)[j],
+                                      beta_rpoDTocrp = (samples_hmc$beta_rpoDTocrp)[j],
+                                      
+                                      beta0_fnr = (samples_hmc$beta0_fnr)[j],
+                                      beta_furTofnr = (samples_hmc$beta_furTofnr)[j],
+                                      beta_rpoDTofnr = (samples_hmc$beta_rpoDTofnr)[j],
+                                      
+                                      beta0_dpiA = (samples_hmc$beta0_dpiA)[j],
+                                      beta_crpTodpiA = (samples_hmc$beta_crpTodpiA)[j],
+                                      beta_rpoDTodpiA = (samples_hmc$beta_rpoDTodpiA)[j],
+                                      beta_fnrTodpiA = (samples_hmc$beta_fnrTodpiA)[j],
+                                      fur = 0,
+                                      num_gen_samples = 1000,
+                                      seed = 1))
+      
+    }
+    means_hmc <- c(means_hmc,mean(J))
+    J <- c()
+  }
+  #CE_list[[paste0("num_data_points_",num_data_points)]] <- means_hmc
+  #means_hmc <- c()
+}
+
+#saveRDS(means_hmc,file = "/Users/sarataheri/Desktop/Simplified_LVM/Experimental_case_study/data/EColi_olive_fnr_cg_BN_ndpu262.RData")
+
+```
+
+## Olive nodes only, (Fig 8 (b))
+
+```{r}
+model_str_EColi <- "
+    data {
+        int D;
+        vector[D] rpoD;
+        vector[D] crp;
+        vector[D] fur;
+        vector[D] dpiA;
+    }
+  parameters {
+       real<lower=0> mu_rpoD; 
+       real<lower=0> sigma_rpoD;
+       
+       real<lower=-2, upper=2> beta0_crp;
+       real<lower=-2, upper=2> beta_rpoDTocrp;
+       
+       
+       real<lower=-2, upper=2> beta0_dpiA;
+       real<lower=-2, upper=2> beta_crpTodpiA;
+       real<lower=-2, upper=2> beta_rpoDTodpiA;
+       real<lower=-2, upper=2> beta_furTodpiA;
+       
+       vector[D] U;
+    }
+    transformed parameters {
+      vector[D] crp_loc;
+      vector[D] dpiA_loc;
+      for (i in 1:D){
+        crp_loc[i]  = 2.6   / (1 + exp(-beta0_crp - rpoD[i] * beta_rpoDTocrp));
+        dpiA_loc[i] = 3.8 / (1 + exp(-beta0_dpiA - crp[i] * beta_crpTodpiA - rpoD[i] * beta_rpoDTodpiA - fur[i] * beta_furTodpiA ));
+      }
+    }
+    model {
+        mu_rpoD ~ normal(5.7, 1);
+        sigma_rpoD ~ normal(1.6,1);
+        
+        beta0_crp ~ normal(0,10);
+        beta_rpoDTocrp ~ normal(0,10);
+        
+        beta0_dpiA ~ normal(0,10);
+        beta_crpTodpiA ~ normal(0,10);
+        beta_rpoDTodpiA ~ normal(0,10);
+        beta_furTodpiA ~ normal(0,10);
+        
+        rpoD ~ normal(mu_rpoD, sigma_rpoD);
+        crp ~ normal(crp_loc,5);
+        dpiA ~ normal(dpiA_loc,0.6);
+    }
+"
+```
+
+```{r, message=FALSE, warning=FALSE}
+mod_EColi <- rstan::stan_model(model_code = model_str_EColi)
+```
+
+```{r}
+# BN_datasets <- readRDS("/home/rahiminasabe/BN_SimulatedDatasets.RData")
+# obs_data_list <- BN_datasets
+# obs_data_list[[length(BN_datasets)+1]] <- obs_data
+```
+
+```{r}
+# GAN_datasets <- list()
+# for (i in 1:100) {
+#   GAN_datasets[[i]] <- read.csv(paste("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/GAN/GAN_simulated data/simdata",i,".csv",sep=""))
+# }
+# obs_data_list <- GAN_datasets
+# obs_data_list[[length(BN_datasets)+1]] <- obs_data
+```
+
+```{r}
+obs_data_list <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/GAN/GAN_simulated data/GAN_datasets.RData")
+```
+
+
+```{r, echo = FALSE}
+K=100
+ndpu = nrow(obs_data)
+hmc_fit_list <- rep(list(list()), K)
+
+start_time <- Sys.time()
+for (num_data_points in ndpu) {
+  for (data_count in 1:K) {
+    print(data_count)
+    data_list <- list(D=num_data_points,
+                      rpoD = obs_data_list[[data_count]]$rpoD[1:num_data_points],
+                      crp = obs_data_list[[data_count]]$crp[1:num_data_points],
+                      fur = obs_data_list[[data_count]]$fur[1:num_data_points],
+                      fnr = obs_data_list[[data_count]]$fnr[1:num_data_points],
+                      dpiA = obs_data_list[[data_count]]$dpiA[1:num_data_points]
+    )
+    
+    hmc_fit_list[[data_count]][[paste0("num_data_points_",num_data_points)]] <- rstan::sampling(mod_EColi,
+                                                                                                data=data_list,
+                                                                                                chains = 2,
+                                                                                                iter = 3000,
+                                                                                                warmup = 1500,
+                                                                                                seed = 1)
+  }
+  
+}
+end_time <- Sys.time()
+Time = end_time - start_time
+print(Time)
+#Time difference of 22.0289 hours total
+#saveRDS(hmc_fit_list,file = "hmc_fit_list_EColi_Olive_fnr_ndpu262.RData")
+```
+
+### Mutilated model
+
+```{r}
+mutilated_model_EColi <- function(mu_rpoD, sigma_rpoD,
+                                  beta0_crp, beta_rpoDTocrp, 
+                                  beta0_dpiA, beta_crpTodpiA, beta_rpoDTodpiA, beta_furTodpiA,
+                                  fur, num_gen_samples,seed) {
+  set.seed(seed)
+  rpoD = rnorm(num_gen_samples, mu_rpoD, sigma_rpoD) 
+  crp = 2.6 / (1 + exp(-beta0_crp - rpoD * beta_rpoDTocrp))
+  fur = rep(fur, num_gen_samples)
+  dpiA = 3.8 / (1 + exp(-beta0_dpiA - crp * beta_crpTodpiA - rpoD * beta_rpoDTodpiA - fur * beta_furTodpiA))
+  return(mean(dpiA))
+}
+```
+
+```{r}
+parameters <- c("mu_rpoD", "sigma_rpoD",
+                "beta0_crp", "beta_rpoDTocrp",
+                "beta0_dpiA", "beta_crpTodpiA", "beta_rpoDTodpiA", "beta_furTodpiA"
+                )
+```
+
+```{r, echo = FALSE}
+#hmc_fit_list <- readRDS("data/IGF_hmc_fit/hmc_fit_list_IGF_olive_ndpu20.RData")
+
+CE_list <- list()
+means_hmc <- c()
+J <- c()
+
+for (num_data_points in ndpu) {
+  for (data_count in 1:K) {
+    samples_hmc <- rstan::extract(hmc_fit_list[[data_count]][[paste0("num_data_points_",num_data_points)]], parameters)
+    for (j in 1:3000) {
+      J <-  c(J,mutilated_model_EColi(mu_rpoD = (samples_hmc$mu_rpoD)[j],
+                                      sigma_rpoD = (samples_hmc$sigma_rpoD)[j],
+                                      
+                                      beta0_crp = (samples_hmc$beta0_crp)[j],
+                                      beta_rpoDTocrp = (samples_hmc$beta_rpoDTocrp)[j],
+                                      
+                                      beta0_dpiA = (samples_hmc$beta0_dpiA)[j],
+                                      beta_crpTodpiA = (samples_hmc$beta_crpTodpiA)[j],
+                                      beta_rpoDTodpiA = (samples_hmc$beta_rpoDTodpiA)[j],
+                                      beta_furTodpiA = (samples_hmc$beta_furTodpiA)[j],
+                                      fur = 0,
+                                      num_gen_samples = 1000,
+                                      seed = 1))
+      
+    }
+    means_hmc <- c(means_hmc,mean(J))
+    J <- c()
+  }
+  #CE_list[[paste0("num_data_points_",num_data_points)]] <- means_hmc
+  #means_hmc <- c()
+}
+
+#saveRDS(means_hmc,file = "/Users/sarataheri/Desktop/Simplified_LVM/Experimental_case_study/data/EColi_olive_cg_BN_ndpu262.RData")
+```
+
+# Plot the results
+
+```{r}
+K=100
+#results for causal generative approach with BN data
+means_full_red_cg_BN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/CausalGenerative_approach/data/EColi_full_cg_BN_ndpu262.RData")
+means_full_cg_BN <-  readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/CausalGenerative_approach/data/EColi_full_cg_BN_ndpu262.RData")
+means_olive_cg_BN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/CausalGenerative_approach/data/EColi_olive_cg_BN_ndpu262.RData")
+means_olive_fnr_cg_BN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/CausalGenerative_approach/data/EColi_olive_fnr_cg_BN_ndpu262.RData")
+means_olive_green_cg_BN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/CausalGenerative_approach/data/EColi_full_cg_BN_ndpu262.RData")
+
+#results for causal generative approach with GAN data
+means_full_red_cg_GAN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/CausalGenerative_approach/data/EColi_full_cg_GAN_ndpu262.RData")
+means_full_cg_GAN <-  readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/CausalGenerative_approach/data/EColi_full_cg_GAN_ndpu262.RData")
+means_olive_cg_GAN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/CausalGenerative_approach/data/EColi_olive_cg_GAN_ndpu262.RData")
+means_olive_fnr_cg_GAN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/CausalGenerative_approach/data/EColi_olive_fnr_cg_GAN_ndpu262.RData")
+means_olive_green_cg_GAN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/CausalGenerative_approach/data/EColi_full_cg_GAN_ndpu262.RData")
+
+#results for linear regression approach with BN data
+means_full_red_lm_BN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/results/EColi_full_red_lm_BN_ndpu262.RData")
+means_full_lm_BN <-  readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/results/EColi_full_lm_BN_ndpu262.RData")
+means_olive_lm_BN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/results/EColi_olive_lm_BN_ndpu262.RData")
+means_olive_fnr_lm_BN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/results/EColi_olive_fnr_lm_BN_ndpu262.RData")
+means_olive_green_lm_BN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/BN/results/EColi_olive_green_lm_BN_ndpu262.RData")
+
+#results for linear regression approach with GAN data
+means_full_red_lm_GAN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/results/EColi_full_red_lm_GAN_ndpu262.RData")
+means_full_lm_GAN <-  readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/results/EColi_full_lm_GAN_ndpu262.RData")
+means_olive_lm_GAN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/results/EColi_olive_lm_GAN_ndpu262.RData")
+means_olive_fnr_lm_GAN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/results/EColi_olive_fnr_lm_GAN_ndpu262.RData")
+means_olive_green_lm_GAN <- readRDS("/Users/sarataheri/GitHub/Simplified_LVM/Experimental_case_study/linearRegression_approach/GAN/results/EColi_olive_green_lm_GAN_ndpu262.RData")
+
+df <- data.frame("CE" = c(means_full_red_cg_BN,
+                          means_full_cg_BN,
+                          means_olive_cg_BN,
+                          means_olive_fnr_cg_BN,
+                          means_olive_green_cg_BN,
+                          means_full_red_cg_GAN,
+                          means_full_cg_GAN,
+                          means_olive_cg_GAN,
+                          means_olive_fnr_cg_GAN,
+                          means_olive_green_cg_GAN,
+                          means_full_red_lm_BN,
+                          means_full_lm_BN$Ey_dox,
+                          means_olive_lm_BN$Ey_dox,
+                          means_olive_fnr_lm_BN$Ey_dox,
+                          means_olive_green_lm_BN$Ey_dox,
+                          means_full_red_lm_GAN,
+                          means_full_lm_GAN$Ey_dox,
+                          means_olive_lm_GAN$Ey_dox,
+                          means_olive_fnr_lm_GAN$Ey_dox,
+                          means_olive_green_lm_GAN$Ey_dox
+                                 ),
+                        "N" = c(rep("(a)",K),
+                                rep("(b)",K),
+                                rep("(c)",K),
+                                rep("(d)",K),
+                                rep("(e)",K),
+                                rep("(a)",K),
+                                rep("(b)",K),
+                                rep("(c)",K),
+                                rep("(d)",K),
+                                rep("(e)",K),
+                                rep("(a)",K),
+                                rep("(b)",K),
+                                rep("(c)",K),
+                                rep("(d)",K),
+                                rep("(e)",K),
+                                rep("(a)",K),
+                                rep("(b)",K),
+                                rep("(c)",K),
+                                rep("(d)",K),
+                                rep("(e)",K)),
+                        "model" = c(rep("Causal generative (BN data)", 5*K),
+                                    rep("Causal generative (GAN data)", 5*K),
+                                    rep("Linear regression (BN data)", 5*K),
+                                    rep("Linear regression (GAN data)", 5*K)
+                                    )
+                        )
+```
+
+
+```{r}
+addline_format <- function(x,...){
+    gsub('\\s','\n',x)
+}
+
+gg1 <- df %>% ggplot(aes(x = as.factor(N), y = CE, fill=model, color=model)) +
+  geom_boxplot(width = 0.6) +
+  geom_abline(intercept=2.81, slope=0) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_blank(),
+        axis.line = element_line(colour = "black"),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 35,face="bold"),
+        legend.key.size = unit(2, "cm"),
+        axis.text.y=element_text(size=35),
+        axis.title.y=element_text(size=35,face="bold"),
+        axis.title.x = element_text(size=35,face="bold"),
+        axis.text.x = element_text(#angle = 90, vjust = 0.5, hjust=1,
+          size = 35, face="bold"),
+        legend.position = "top",
+        plot.title = element_text(size = 35, hjust = 0.5, face = "bold")
+  ) +
+  guides(fill=guide_legend(nrow=2, byrow=TRUE)) +
+  xlab("Input network") +
+  ylim(1.5,3.5) +
+  scale_fill_discrete(labels = c("Causal generative \n(BN data)",
+                                 "Causal generative \n(GAN data)",
+                                 "Linear regression \n(BN data)",
+                                 "Linear regression \n(GAN data)")) +
+  scale_fill_manual(values = c("brown", "#7CAE00", "white", "white")) +
+  scale_color_manual(values = c("brown", "#7CAE00", "brown", "#7CAE00")) + 
+  ylab(expression(bold(paste(hat(E)," [ dpiA | do ( fur = 0 ) ]"))))
+gg1
+#ggsave("/Users/sarataheri/GitHub/Simplified_LVM/img/EColi_boxplots.pdf", plot = gg1, width = 18, height = 9, dpi = 300, units = "in")
+```
